@@ -539,17 +539,15 @@ impl<'a> Effect<'a> {
                 }
             }
             // Set the blend state
-            /*
             for (i, (src, dst)) in pass.blend.iter().enumerate() {
-                //gl.enable_i(gl::BLEND, i);
-                //gl.blend_func_i(src, dst);
+                gl.enablei(gl::BLEND, i as GLuint);
+                gl.blend_funci(i as GLuint, *src, *dst);
             }
             let blends_specified_count = pass.blend.len();
             let attachment_count = current_draw_fbo.color_attachments.len();
-            for i in (blends_specified_count..attachment_count) {
-                //gl.disable_i(gl::BLEND, i);
+            for i in blends_specified_count..attachment_count {
+                gl.disablei(gl::BLEND, i as GLuint);
             }
-            */
             // Set the depth state
             if let Some(func) = pass.depth {
                 gl.enable(gl::DEPTH_TEST);

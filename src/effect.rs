@@ -231,7 +231,7 @@ impl<'a> Effect<'a> {
     pub fn draw(&mut self, gl: &GLRc, window_width: f32, window_height: f32) -> Result<()> {
         // TODO(jshrake): Consider adding the following to the config: enables: ["multisample, framebuffer_srgb"]
         //gl.enable(gl::MULTISAMPLE);
-        //gl.enable(gl::FRAMEBUFFER_SRGB);
+        gl.enable(gl::FRAMEBUFFER_SRGB);
         gl.enable(gl::TEXTURE_CUBE_MAP_SEAMLESS);
         gl.enable(gl::PROGRAM_POINT_SIZE);
 

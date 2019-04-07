@@ -170,7 +170,7 @@ pub struct PassConfig {
     pub uniform_to_channel: BTreeMap<String, ChannelConfig>,
     // render pass settings
     pub buffer: Option<String>,
-    pub clear: Option<[f32; 4]>,
+    pub clear: Option<ClearConfig>,
     pub blend: Option<BlendConfig>,
     pub depth: Option<DepthFuncConfig>,
     #[serde(default)]
@@ -241,6 +241,13 @@ pub enum DepthFuncConfig {
     GEqual,
     #[serde(rename = "always")]
     Always,
+}
+
+#[derive(Debug, Deserialize, PartialEq, Clone)]
+#[serde(untagged)]
+pub enum ClearConfig {
+    Simple([f32; 4]),
+    Complete(Vec<[f32; 4]>),
 }
 
 #[derive(Debug, Deserialize, PartialEq, Clone)]

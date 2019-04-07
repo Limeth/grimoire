@@ -118,7 +118,7 @@ struct GLPass {
     // render state
     draw_mode: GLenum,
     draw_count: GLsizei,
-    clear_color: Option<[f32; 4]>,
+    clear_color: Vec<[f32; 4]>,
     blend: Vec<(GLenum, GLenum)>,
     depth: Option<GLenum>,
 }
@@ -238,9 +238,9 @@ impl<'a> Effect<'a> {
         // Clear the default framebuffer initially to a weird color to signal an error
         gl.bind_framebuffer(gl::FRAMEBUFFER, 0);
         gl.viewport(0, 0, window_width as i32, window_height as i32);
-        gl.clear_depth(1.0);
-        gl.clear_color(0.7, 0.1, 0.8, 1.0); // a random error color I picked arbitrarily
-        gl.clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
+        //gl.clear_depth(1.0);
+        //gl.clear_color(0.7, 0.1, 0.8, 1.0); // a random error color I picked arbitrarily
+        //gl.clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
 
         // If the config didn't validate, go no further
         // The user needs to fix the error in their file
@@ -446,13 +446,19 @@ impl<'a> Effect<'a> {
                 .map(|ppfbo| ppfbo.last_draw())
                 .unwrap_or(&default_framebuffer);
             gl.bind_framebuffer(gl::FRAMEBUFFER, current_draw_fbo.framebuffer);
-            if let Some(clear_color) = pass.clear_color {
-                gl.clear_color(
+            let mut should_clear = false;
+            for (i, clear_color) in pass.clear_color.iter().enumerate() {
+                gl.clear_color_buffer(
+                    gl::COLOR,
+                    i as GLint,
                     clear_color[0],
                     clear_color[1],
                     clear_color[2],
                     clear_color[3],
                 );
+                should_clear = true;
+            }
+            if should_clear {
                 // TODO(jshrake): This should be configurable
                 // consider making clear_color a 5 element array
                 gl.clear_depth(1.0);
@@ -801,6 +807,13 @@ impl<'a> Effect<'a> {
                 .depth
                 .as_ref()
                 .map(|depth| gl_depth_from_config(&depth));
+            let clear_color = match pass_config.clear {
+                None => vec![],
+                Some(ref clear) => match clear {
+                    ClearConfig::Simple(a) => vec![*a],
+                    ClearConfig::Complete(v) => v.clone(),
+                },
+            };
             self.pipeline.passes.push(GLPass {
                 // shader resources
                 vertex_shader,
@@ -815,7 +828,7 @@ impl<'a> Effect<'a> {
                 draw_count,
                 blend,
                 depth,
-                clear_color: pass_config.clear,
+                clear_color,
             })
         }
         // Now that we built all the pass programs, remember to connect the existing

@@ -456,6 +456,7 @@ impl<'a> Effect<'a> {
             if !draw_buffers.is_empty() {
                 gl.draw_buffers(&draw_buffers);
             }
+            let mut should_clear_depth = false;
             for (i, clear_color) in pass.clear_color.iter().enumerate() {
                 gl.clear_color_buffer(
                     gl::COLOR,
@@ -465,8 +466,13 @@ impl<'a> Effect<'a> {
                     clear_color[2],
                     clear_color[3],
                 );
+                should_clear_depth = true;
             }
             // TODO(jshrake): clear depth buffer
+            if should_clear_depth {
+                gl.clear_depth(1.0);
+                gl.clear(gl::DEPTH_BUFFER_BIT);
+            }
             // Set the viewport to match the framebuffer resolution
             gl.viewport(
                 0,

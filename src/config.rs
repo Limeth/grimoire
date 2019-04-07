@@ -172,7 +172,7 @@ pub struct PassConfig {
     pub buffer: Option<String>,
     pub clear: Option<ClearConfig>,
     pub blend: Option<BlendConfig>,
-    pub depth: Option<DepthFuncConfig>,
+    pub depth: Option<DepthTestConfig>,
     #[serde(default)]
     pub disable: bool,
 }
@@ -195,7 +195,7 @@ impl BufferConfig {
         match &self.buffer {
             BufferFormatConfig::Dumb(_) => 1,
             BufferFormatConfig::Simple(_) => 1,
-            BufferFormatConfig::Complete(v) => v.len()
+            BufferFormatConfig::Complete(v) => v.len(),
         }
     }
 }
@@ -207,7 +207,6 @@ pub enum BufferFormatConfig {
     Simple(BufferFormat),
     Complete(Vec<BufferFormat>),
 }
-
 
 #[derive(Debug, Deserialize, PartialEq, Clone, Copy)]
 #[serde(rename_all = "lowercase")]
@@ -239,7 +238,32 @@ pub struct DrawConfig {
     pub count: u32,
 }
 
-#[derive(Debug, Deserialize, PartialEq, Clone)]
+#[derive(Debug, Deserialize, PartialEq, Clone, Copy)]
+#[serde(untagged)]
+pub enum DepthTestConfig {
+    Simple(DepthFuncConfig),
+    Complete { func: DepthFuncConfig, write: bool },
+}
+
+impl Default for DepthTestConfig {
+    fn default() -> Self {
+        DepthTestConfig::Complete {
+            func: DepthFuncConfig::Less,
+            write: true,
+        }
+    }
+}
+
+impl DepthTestConfig {
+    pub fn func(&self) -> DepthFuncConfig {
+        *(match self {
+            DepthTestConfig::Simple(func) => func,
+            DepthTestConfig::Complete { func, .. } => func,
+        })
+    }
+}
+
+#[derive(Debug, Deserialize, PartialEq, Clone, Copy)]
 pub enum DepthFuncConfig {
     #[serde(rename = "never")]
     Never,

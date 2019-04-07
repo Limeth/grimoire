@@ -121,6 +121,7 @@ struct GLPass {
     clear_color: Vec<[f32; 4]>,
     blend: Vec<(GLenum, GLenum)>,
     depth: Option<GLenum>,
+    depth_write: bool,
 }
 
 #[derive(Debug, Default)]
@@ -563,13 +564,14 @@ impl<'a> Effect<'a> {
             for i in blends_specified_count..attachment_count {
                 gl.disablei(gl::BLEND, i as GLuint);
             }
-            // Set the depth state
-            if let Some(func) = pass.depth {
+            // Set the depth test state
+            if let Some(depth_func) = pass.depth {
                 gl.enable(gl::DEPTH_TEST);
-                gl.depth_func(func);
+                gl.depth_func(depth_func);
             } else {
                 gl.disable(gl::DEPTH_TEST);
             }
+            gl.depth_mask(pass.depth_write);
             // Draw!
             gl.draw_arrays(pass.draw_mode, 0, pass.draw_count);
             // Swap the color attachments in the self.resources map
@@ -815,7 +817,7 @@ impl<'a> Effect<'a> {
             let depth = pass_config
                 .depth
                 .as_ref()
-                .map(|depth| gl_depth_from_config(&depth));
+                .map(|depth| gl_depth_from_config(&depth.func()));
             let clear_color = match pass_config.clear {
                 None => vec![],
                 Some(ref clear) => match clear {
@@ -823,6 +825,13 @@ impl<'a> Effect<'a> {
                     ClearConfig::Complete(v) => v.clone(),
                 },
             };
+            let depth_write = pass_config
+                .depth
+                .map(|depth| match depth {
+                    DepthTestConfig::Simple(_) => true,
+                    DepthTestConfig::Complete { write, .. } => write,
+                })
+                .unwrap_or(true);
             self.pipeline.passes.push(GLPass {
                 // shader resources
                 vertex_shader,
@@ -837,6 +846,7 @@ impl<'a> Effect<'a> {
                 draw_count,
                 blend,
                 depth,
+                depth_write,
                 clear_color,
             })
         }

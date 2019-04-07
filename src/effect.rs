@@ -446,7 +446,16 @@ impl<'a> Effect<'a> {
                 .map(|ppfbo| ppfbo.last_draw())
                 .unwrap_or(&default_framebuffer);
             gl.bind_framebuffer(gl::FRAMEBUFFER, current_draw_fbo.framebuffer);
-            let mut should_clear = false;
+            // Call draw_buffers if we have attachments
+            // Assuming this is not the default framebuffer, we always
+            // have at least one color attachment
+            let attachment_count = current_draw_fbo.color_attachments.len();
+            let draw_buffers: Vec<GLenum> = (0..attachment_count)
+                .map(|i| gl::COLOR_ATTACHMENT0 + i as u32)
+                .collect();
+            if !draw_buffers.is_empty() {
+                gl.draw_buffers(&draw_buffers);
+            }
             for (i, clear_color) in pass.clear_color.iter().enumerate() {
                 gl.clear_color_buffer(
                     gl::COLOR,
@@ -456,14 +465,8 @@ impl<'a> Effect<'a> {
                     clear_color[2],
                     clear_color[3],
                 );
-                should_clear = true;
             }
-            if should_clear {
-                // TODO(jshrake): This should be configurable
-                // consider making clear_color a 5 element array
-                gl.clear_depth(1.0);
-                gl.clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
-            }
+            // TODO(jshrake): clear depth buffer
             // Set the viewport to match the framebuffer resolution
             gl.viewport(
                 0,
@@ -546,11 +549,11 @@ impl<'a> Effect<'a> {
             }
             // Set the blend state
             for (i, (src, dst)) in pass.blend.iter().enumerate() {
+                gl.enable(gl::BLEND);
                 gl.enablei(gl::BLEND, i as GLuint);
                 gl.blend_funci(i as GLuint, *src, *dst);
             }
             let blends_specified_count = pass.blend.len();
-            let attachment_count = current_draw_fbo.color_attachments.len();
             for i in blends_specified_count..attachment_count {
                 gl.disablei(gl::BLEND, i as GLuint);
             }
@@ -1027,15 +1030,6 @@ impl<'a> Effect<'a> {
                         None
                     };
 
-                    // Call draw_buffers if we have attachments
-                    // Assuming this is not the default framebuffer, we always
-                    // have at least one color attachment
-                    let draw_buffers: Vec<GLenum> = (0..attachment_count)
-                        .map(|i| gl::COLOR_ATTACHMENT0 + i as u32)
-                        .collect();
-                    if !draw_buffers.is_empty() {
-                        gl.draw_buffers(&draw_buffers);
-                    }
                     // This should never fail
                     let fbo_status = gl::check_framebuffer_status(gl, framebuffer);
                     assert!(fbo_status == gl::FRAMEBUFFER_COMPLETE);

@@ -909,7 +909,7 @@ impl<'a> Effect<'a> {
                         let attachment_format = match buffer.buffer {
                             BufferFormatConfig::Dumb(_) => BufferFormat::F32,
                             BufferFormatConfig::Simple(f) => f,
-                            BufferFormatConfig::Complete(ref v) => v[attachment_index]
+                            BufferFormatConfig::Complete(ref v) => v[attachment_index],
                         };
                         // calculate parameters for gl texture creation based on config
                         let (internal, format, data_type, bytes_per) =
@@ -928,11 +928,15 @@ impl<'a> Effect<'a> {
                                 (3, BufferFormat::F32) => (gl::RGB32F, gl::RGB, gl::FLOAT, 4),
                                 // 4 components
                                 (4, BufferFormat::U8) => (gl::RGBA, gl::RGBA, gl::UNSIGNED_BYTE, 1),
-                                (4, BufferFormat::F16) => (gl::RGBA16F, gl::RGBA, gl::HALF_FLOAT, 2),
+                                (4, BufferFormat::F16) => {
+                                    (gl::RGBA16F, gl::RGBA, gl::HALF_FLOAT, 2)
+                                }
                                 (4, BufferFormat::F32) => (gl::RGBA32F, gl::RGBA, gl::FLOAT, 4),
                                 // components specified is outside the range [0,4], default to 4
                                 (_, BufferFormat::U8) => (gl::RGBA, gl::RGBA, gl::UNSIGNED_BYTE, 1),
-                                (_, BufferFormat::F16) => (gl::RGBA16F, gl::RGBA, gl::HALF_FLOAT, 2),
+                                (_, BufferFormat::F16) => {
+                                    (gl::RGBA16F, gl::RGBA, gl::HALF_FLOAT, 2)
+                                }
                                 (_, BufferFormat::F32) => (gl::RGBA32F, gl::RGBA, gl::FLOAT, 4),
                             };
                         // zero out the allocated color attachments

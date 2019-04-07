@@ -895,39 +895,44 @@ impl<'a> Effect<'a> {
                     let width = (scale * width as f32) as u32;
                     let height = (scale * height as f32) as u32;
                     let resolution = [width as f32, height as f32, width as f32 / height as f32];
-                    // calculate parameters for gl texture creation based on config
-                    let (internal, format, data_type, bytes_per) =
-                        match (&buffer.components, &buffer.format) {
-                            // 1 component
-                            (1, BufferFormat::U8) => (gl::R, gl::R, gl::UNSIGNED_BYTE, 1),
-                            (1, BufferFormat::F16) => (gl::R16F, gl::R, gl::HALF_FLOAT, 2),
-                            (1, BufferFormat::F32) => (gl::R32F, gl::R, gl::FLOAT, 4),
-                            // 2 components
-                            (2, BufferFormat::U8) => (gl::RG, gl::RG, gl::UNSIGNED_BYTE, 1),
-                            (2, BufferFormat::F16) => (gl::RG16F, gl::RG, gl::HALF_FLOAT, 2),
-                            (2, BufferFormat::F32) => (gl::RG32F, gl::RG, gl::FLOAT, 4),
-                            // 3 components
-                            (3, BufferFormat::U8) => (gl::RGB, gl::RGB, gl::UNSIGNED_BYTE, 1),
-                            (3, BufferFormat::F16) => (gl::RGB16F, gl::RGB, gl::HALF_FLOAT, 2),
-                            (3, BufferFormat::F32) => (gl::RGB32F, gl::RGB, gl::FLOAT, 4),
-                            // 4 components
-                            (4, BufferFormat::U8) => (gl::RGBA, gl::RGBA, gl::UNSIGNED_BYTE, 1),
-                            (4, BufferFormat::F16) => (gl::RGBA16F, gl::RGBA, gl::HALF_FLOAT, 2),
-                            (4, BufferFormat::F32) => (gl::RGBA32F, gl::RGBA, gl::FLOAT, 4),
-                            // components specified is outside the range [0,4], default to 4
-                            (_, BufferFormat::U8) => (gl::RGBA, gl::RGBA, gl::UNSIGNED_BYTE, 1),
-                            (_, BufferFormat::F16) => (gl::RGBA16F, gl::RGBA, gl::HALF_FLOAT, 2),
-                            (_, BufferFormat::F32) => (gl::RGBA32F, gl::RGBA, gl::FLOAT, 4),
-                        };
-                    // zero out the allocated color attachments
-                    // Note that the attachments are 4 channels x bytes_per
-                    let zero_data = vec![
-                        0 as u8;
-                        (width * height * buffer.components as u32 * bytes_per)
-                            as usize
-                    ];
-                    let attachment_count = buffer.attachments as usize;
+                    let attachment_count = buffer.attachment_count();
                     for attachment_index in 0..attachment_count {
+                        let attachment_format = match buffer.buffer {
+                            BufferFormatConfig::Dumb(_) => BufferFormat::F32,
+                            BufferFormatConfig::Simple(f) => f,
+                            BufferFormatConfig::Complete(ref v) => v[attachment_index]
+                        };
+                        // calculate parameters for gl texture creation based on config
+                        let (internal, format, data_type, bytes_per) =
+                            match (&buffer.components, &attachment_format) {
+                                // 1 component
+                                (1, BufferFormat::U8) => (gl::R, gl::R, gl::UNSIGNED_BYTE, 1),
+                                (1, BufferFormat::F16) => (gl::R16F, gl::R, gl::HALF_FLOAT, 2),
+                                (1, BufferFormat::F32) => (gl::R32F, gl::R, gl::FLOAT, 4),
+                                // 2 components
+                                (2, BufferFormat::U8) => (gl::RG, gl::RG, gl::UNSIGNED_BYTE, 1),
+                                (2, BufferFormat::F16) => (gl::RG16F, gl::RG, gl::HALF_FLOAT, 2),
+                                (2, BufferFormat::F32) => (gl::RG32F, gl::RG, gl::FLOAT, 4),
+                                // 3 components
+                                (3, BufferFormat::U8) => (gl::RGB, gl::RGB, gl::UNSIGNED_BYTE, 1),
+                                (3, BufferFormat::F16) => (gl::RGB16F, gl::RGB, gl::HALF_FLOAT, 2),
+                                (3, BufferFormat::F32) => (gl::RGB32F, gl::RGB, gl::FLOAT, 4),
+                                // 4 components
+                                (4, BufferFormat::U8) => (gl::RGBA, gl::RGBA, gl::UNSIGNED_BYTE, 1),
+                                (4, BufferFormat::F16) => (gl::RGBA16F, gl::RGBA, gl::HALF_FLOAT, 2),
+                                (4, BufferFormat::F32) => (gl::RGBA32F, gl::RGBA, gl::FLOAT, 4),
+                                // components specified is outside the range [0,4], default to 4
+                                (_, BufferFormat::U8) => (gl::RGBA, gl::RGBA, gl::UNSIGNED_BYTE, 1),
+                                (_, BufferFormat::F16) => (gl::RGBA16F, gl::RGBA, gl::HALF_FLOAT, 2),
+                                (_, BufferFormat::F32) => (gl::RGBA32F, gl::RGBA, gl::FLOAT, 4),
+                            };
+                        // zero out the allocated color attachments
+                        // Note that the attachments are 4 channels x bytes_per
+                        let zero_data = vec![
+                            0 as u8;
+                            (width * height * buffer.components as u32 * bytes_per)
+                                as usize
+                        ];
                         let texture = gl::create_texture2d(
                             gl,
                             internal as i32,
@@ -949,7 +954,7 @@ impl<'a> Effect<'a> {
                         // depth attachment texture
                         let hash = hash_name_attachment(
                             resource_name,
-                            attachment_index + i * (buffer.attachments + 1),
+                            attachment_index + i * (buffer.attachment_count() + 1),
                         );
                         color_attachments.push(hash);
                         let resource = GLResource {
@@ -1005,7 +1010,7 @@ impl<'a> Effect<'a> {
                         );
                         let hash = hash_name_attachment(
                             resource_name,
-                            buffer.attachments + i * (buffer.attachments + 1),
+                            buffer.attachment_count() + i * (buffer.attachment_count() + 1),
                         );
                         let resource = GLResource {
                             target: gl::TEXTURE_2D,

@@ -171,6 +171,8 @@ pub struct PassConfig {
     // render pass settings
     pub buffer: Option<String>,
     pub clear: Option<ClearConfig>,
+    #[serde(rename = "clear-depth")]
+    pub clear_depth: Option<ClearDepthConfig>,
     pub blend: Option<BlendConfig>,
     pub depth: Option<DepthTestConfig>,
     #[serde(default)]
@@ -281,6 +283,12 @@ pub enum DepthFuncConfig {
     GEqual,
     #[serde(rename = "always")]
     Always,
+}
+
+#[derive(Debug, Deserialize, PartialEq, Clone)]
+#[serde(untagged)]
+pub enum ClearDepthConfig {
+    Simple(f32),
 }
 
 #[derive(Debug, Deserialize, PartialEq, Clone)]

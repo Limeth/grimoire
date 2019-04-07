@@ -120,6 +120,7 @@ struct GLPass {
     draw_count: GLsizei,
     clear_color: Vec<[f32; 4]>,
     blend: Vec<(GLenum, GLenum)>,
+    clear_depth: Option<f32>,
     depth: Option<GLenum>,
     depth_write: bool,
 }
@@ -457,7 +458,6 @@ impl<'a> Effect<'a> {
             if !draw_buffers.is_empty() {
                 gl.draw_buffers(&draw_buffers);
             }
-            let mut should_clear_depth = false;
             for (i, clear_color) in pass.clear_color.iter().enumerate() {
                 gl.clear_color_buffer(
                     gl::COLOR,
@@ -467,11 +467,10 @@ impl<'a> Effect<'a> {
                     clear_color[2],
                     clear_color[3],
                 );
-                should_clear_depth = true;
             }
             // TODO(jshrake): clear depth buffer
-            if should_clear_depth {
-                gl.clear_depth(1.0);
+            if let Some(clear_depth) = pass.clear_depth {
+                gl.clear_depth(clear_depth.into());
                 gl.clear(gl::DEPTH_BUFFER_BIT);
             }
             // Set the viewport to match the framebuffer resolution
@@ -825,6 +824,12 @@ impl<'a> Effect<'a> {
                     ClearConfig::Complete(v) => v.clone(),
                 },
             };
+            let clear_depth = match pass_config.clear_depth {
+                None => None,
+                Some(ref clear_depth) => match clear_depth {
+                    ClearDepthConfig::Simple(v) => Some(*v),
+                },
+            };
             let depth_write = pass_config
                 .depth
                 .map(|depth| match depth {
@@ -848,6 +853,7 @@ impl<'a> Effect<'a> {
                 depth,
                 depth_write,
                 clear_color,
+                clear_depth,
             })
         }
         // Now that we built all the pass programs, remember to connect the existing

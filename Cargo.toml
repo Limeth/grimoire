@@ -20,7 +20,7 @@ chrono              = "0.4"
 clap                = "2.32"
 env_logger          = "0.6"
 failure             = "0.1"
-gleam               = "0.6"
+gleam               = { git = "https://github.com/jshrake/gleam", branch = "oit-functions" }
 glsl-include        = "0.3"
 gstreamer           = "0.13"
 gstreamer-app       = "0.13"

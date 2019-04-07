@@ -244,12 +244,19 @@ pub enum DepthFuncConfig {
 }
 
 #[derive(Debug, Deserialize, PartialEq, Clone)]
-pub struct BlendConfig {
+#[serde(untagged)]
+pub enum BlendConfig {
+    Simple(BlendSrcDstConfig),
+    Complete(Vec<BlendSrcDstConfig>),
+}
+
+#[derive(Debug, Deserialize, PartialEq, Clone, Copy)]
+pub struct BlendSrcDstConfig {
     pub src: BlendFactorConfig,
     pub dst: BlendFactorConfig,
 }
 
-#[derive(Debug, Deserialize, PartialEq, Clone)]
+#[derive(Debug, Deserialize, PartialEq, Clone, Copy)]
 pub enum BlendFactorConfig {
     #[serde(rename = "zero")]
     Zero,

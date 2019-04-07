@@ -119,7 +119,7 @@ struct GLPass {
     draw_mode: GLenum,
     draw_count: GLsizei,
     clear_color: Option<[f32; 4]>,
-    blend: Option<(GLenum, GLenum)>,
+    blend: Vec<(GLenum, GLenum)>,
     depth: Option<GLenum>,
 }
 
@@ -539,12 +539,17 @@ impl<'a> Effect<'a> {
                 }
             }
             // Set the blend state
-            if let Some((src, dst)) = pass.blend {
-                gl.enable(gl::BLEND);
-                gl.blend_func(src, dst);
-            } else {
-                gl.disable(gl::BLEND);
+            /*
+            for (i, (src, dst)) in pass.blend.iter().enumerate() {
+                //gl.enable_i(gl::BLEND, i);
+                //gl.blend_func_i(src, dst);
             }
+            let blends_specified_count = pass.blend.len();
+            let attachment_count = current_draw_fbo.color_attachments.len();
+            for i in (blends_specified_count..attachment_count) {
+                //gl.disable_i(gl::BLEND, i);
+            }
+            */
             // Set the depth state
             if let Some(func) = pass.depth {
                 gl.enable(gl::DEPTH_TEST);
@@ -777,12 +782,23 @@ impl<'a> Effect<'a> {
                 DrawModeConfig::LineLoop => (gl::LINE_LOOP, 2 * draw_count),
                 DrawModeConfig::LineStrip => (gl::LINE_STRIP, 2 * draw_count),
             };
-            let blend = pass_config.blend.as_ref().map(|blend| {
-                (
-                    gl_blend_from_config(&blend.src),
-                    gl_blend_from_config(&blend.dst),
-                )
-            });
+            let blend = match pass_config.blend {
+                None => Vec::new(),
+                Some(ref blend) => match blend {
+                    BlendConfig::Simple(src_dst) => {
+                        let mut l = Vec::new();
+                        l.push((src_dst.src, src_dst.dst));
+                        l
+                    }
+                    BlendConfig::Complete(src_dst_list) => {
+                        src_dst_list.iter().map(|sd| (sd.src, sd.dst)).collect()
+                    }
+                },
+            };
+            let blend = blend
+                .iter()
+                .map(|(s, d)| (gl_blend_from_config(&s), gl_blend_from_config(&d)))
+                .collect();
             let depth = pass_config
                 .depth
                 .as_ref()

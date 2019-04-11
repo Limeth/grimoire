@@ -792,7 +792,7 @@ impl<'a> Effect<'a> {
                 DrawModeConfig::Points => (gl::POINTS, draw_count),
                 DrawModeConfig::Lines => (gl::LINES, 2 * draw_count),
                 DrawModeConfig::TriangleFan => (gl::TRIANGLE_FAN, 3 * draw_count),
-                DrawModeConfig::TriangleStrip => (gl::TRIANGLE_STRIP, 3 * draw_count),
+                DrawModeConfig::TriangleStrip => (gl::TRIANGLE_STRIP, 3 + (draw_count - 1)),
                 DrawModeConfig::LineLoop => (gl::LINE_LOOP, 2 * draw_count),
                 DrawModeConfig::LineStrip => (gl::LINE_STRIP, 2 * draw_count),
             };

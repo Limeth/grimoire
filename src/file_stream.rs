@@ -38,6 +38,17 @@ impl FileStream {
     pub fn try_recv(&mut self) -> Result<Option<Vec<u8>>> {
         let event = self.watcher_rx.try_recv();
         let should_read = match event {
+            Ok(DebouncedEvent::NoticeRemove(_)) => {
+                let (watcher_tx, watcher_rx) = channel();
+                let mut watcher: RecommendedWatcher =
+                    Watcher::new(watcher_tx, Duration::from_millis(200)).map_err(Error::notify)?;
+                watcher
+                    .watch(self.path.clone(), RecursiveMode::NonRecursive)
+                    .map_err(|err| Error::watch_path(self.path.clone(), err))?;
+                self.watcher_rx = watcher_rx;
+                self.watcher = watcher;
+                true
+            },
             Ok(DebouncedEvent::Write(_)) | Ok(DebouncedEvent::Create(_)) => true,
             Ok(_) | Err(TryRecvError::Empty) => false,
             Err(TryRecvError::Disconnected) => {
